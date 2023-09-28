@@ -1,7 +1,7 @@
 <?php
-namespace Clicalmani\Flesco\Routes;
+namespace Clicalmani\Routes;
 
-use Clicalmani\Flesco\Collection\Collection;
+use Clicalmani\Collection\Collection;
 
 class Routines implements \ArrayAccess
 {

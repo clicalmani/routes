@@ -1,11 +1,11 @@
 <?php
-namespace Clicalmani\Flesco\Routes;
+namespace Clicalmani\Routes;
 
 use Clicalmani\Flesco\Providers\ServiceProvider;
 use Clicalmani\Flesco\Exceptions\MiddlewareException;
 
-class Route {
-    
+class Route 
+{
     public static $routines;
     public static $route_middlewares = [];
     public static $registered_guards = [];
@@ -17,15 +17,14 @@ class Route {
         'float',
         'string'
     ];
-    private const VALIDATORS = [
-        'pattern',
-        'enum'
-    ];
+
     public static $current_route;
     public static $grouping_started = false;
 
     public static function currentRoute()
     {
+        if ( inConsoleMode() ) return '@console';
+        
         $url = parse_url(
             $_SERVER['REQUEST_URI']
         );
@@ -186,7 +185,7 @@ class Route {
      * 
      * @param $resource [mixed] string or array
      * @param $controller [string] string a class extending \Clicalmani\Flesco\Http\Controllers\RequestController::class
-     * @return \Clicalmani\Flesco\Routes\Routines
+     * @return \Clicalmani\Routes\Routines
      */
     public static function apiResource(mixed $resource, string $controller = null) : Routines
     {
@@ -376,11 +375,11 @@ class Route {
 
     public static function getCurrentRouteMiddlewares()
     {
-        $current_route = self::$current_route;
+        $current_route = self::currentRoute();
         
         if ( self::isApi() ) {
-            if ( strpos(self::$current_route, self::getApiPrefix()) === 1 ) {
-                $current_route = substr(self::$current_route, strlen(self::getApiPrefix()) + 1);   // Remove api prefix
+            if ( strpos(self::currentRoute(), self::getApiPrefix()) === 1 ) {
+                $current_route = substr(self::currentRoute(), strlen(self::getApiPrefix()) + 1);   // Remove api prefix
             }
         }
 
@@ -594,7 +593,7 @@ class Route {
      * 
      * @param $sroute [string] The syntical route to be matched with
      * @param $sseq [array] The route sequences 
-     * @see \Clicalmani\Flesco\Routes::getSequence for mor details
+     * @see \Clicalmani\Routes::getSequence for mor details
      * @return array different sequences of the route after parameters replaced.
      */
     private static function build($sroute, $sseq)
@@ -628,7 +627,7 @@ class Route {
      * compares to the current route
      * 
      * @param $sequences [array] 
-     * @see \Clicalmani\Flesco\Routes::getSequence for mor details
+     * @see \Clicalmani\Routes::getSequence for mor details
      * @return boolean true on success, of false on failure.
      */
     private static function isSameRoute($sequences)
@@ -664,7 +663,7 @@ class Route {
     /**
      * Determine whether the specified parameter name as argument has validator or not
      * 
-     * @see \Clicalmani\Flesco\Routes\Route::validateParameter for possible validators
+     * @see \Clicalmani\Routes\Route::validateParameter for possible validators
      * @param $param [string] parameter name
      * @return boolean true on success, or false on failure
      */

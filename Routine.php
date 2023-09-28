@@ -1,5 +1,5 @@
 <?php
-namespace Clicalmani\Flesco\Routes;
+namespace Clicalmani\Routes;
 
 class Routine
 {
@@ -87,7 +87,7 @@ class Routine
      * Finds whether the parameter value is numeric.
      * 
      * @param $params [mixed] Array or string
-     * @return \Clicalmani\Flesco\Routes\Routine
+     * @return \Clicalmani\Routes\Routine
      */
     function whereNumber($params)
     {
@@ -102,7 +102,7 @@ class Routine
      * Finds whether the parameter value is an int.
      * 
      * @param $param [mixed] Array or string
-     * @return \Clicalmani\Flesco\Routes\Routine
+     * @return \Clicalmani\Routes\Routine
      */
     function whereInt($params)
     {
@@ -117,7 +117,7 @@ class Routine
      * Finds whether the parameter value is float.
      * 
      * @param $param [string] Array or string
-     * @return \Clicalmani\Flesco\Routes\Routine
+     * @return \Clicalmani\Routes\Routine
      */
     function whereFloat($params)
     {
@@ -133,7 +133,7 @@ class Routine
      * 
      * @param $param [string] Route parameter
      * @param $list [string] comma seperated list
-     * @return \Clicalmani\Flesco\Routes\Routine
+     * @return \Clicalmani\Routes\Routine
      */
     function whereEnum($params, $list = [])
     {
@@ -149,7 +149,7 @@ class Routine
      * 
      * @param $param [string] Route parameter
      * @param $pattern [string] a regular expression pattern without delimeters.
-     * @return \Clicalmani\Flesco\Routes\Routine
+     * @return \Clicalmani\Routes\Routine
      */
     function where($params, $pattern)
     {
@@ -166,7 +166,7 @@ class Routine
      * 
      * @param $param [string] Route parameter
      * @param $callback [Closure] a callback function to be executed before navigation.
-     * @return \Clicalmani\Flesco\Routes\Routine
+     * @return \Clicalmani\Routes\Routine
      */
     function guardAgainst($param, $callback)
     {

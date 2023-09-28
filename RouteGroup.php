@@ -1,5 +1,5 @@
 <?php
-namespace Clicalmani\Flesco\Routes;
+namespace Clicalmani\Routes;
 
 class RouteGroup
 {
