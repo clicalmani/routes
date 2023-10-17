@@ -10,4 +10,3 @@ class RouteNotFoundException extends \Exception {
 		} else http_response_code(404);
 	}
 }
-?>

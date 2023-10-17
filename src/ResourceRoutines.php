@@ -2,12 +2,13 @@
 namespace Clicalmani\Routes;
 
 use Clicalmani\Collection\Collection;
+use Clicalmani\Routes\Exceptions\RoutineNotFoundException;
 
-class Routines implements \ArrayAccess
+class ResourceRoutines implements \ArrayAccess
 {
     private string $resource;
 
-    static array $resources  = [];
+    private static array $resources  = [];
 
     function __construct(private Collection $storage = new Collection) {
         $this->resource = '';
@@ -60,12 +61,27 @@ class Routines implements \ArrayAccess
         })->first();
     }
 
-    function merge(Routines $routines)
+    /**
+     * Get resource routines
+     * 
+     * @param string $resource
+     * @return \stdClass
+     */
+    public static function getRoutines(string $resource) : \stdClass
+    {
+        if ( array_key_exists($resource, static::$resources) ) {
+			return (object) static::$resources[$resource];
+		}
+
+        throw new RoutineNotFoundException($resource);
+    }
+
+    function merge(ResourceRoutines $routines)
     {
         $this->storage->merge($routines);
     }
 
-    function addResource(string $resource, Routines $routines) : void
+    function addResource(string $resource, ResourceRoutines $routines) : void
     {
         $this->resource = $resource;
 
@@ -186,7 +202,7 @@ class Routines implements \ArrayAccess
     function offset(int $offset = 0)
     {
         if ( $this->resource ) {
-            static::$resources[$this->resource]['properties']['offset'] = $limit;
+            static::$resources[$this->resource]['properties']['offset'] = $offset;
         }
 
         return $this;

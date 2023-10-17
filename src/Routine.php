@@ -1,10 +1,8 @@
 <?php
 namespace Clicalmani\Routes;
 
-class Routine
+class Routine extends Route
 {
-    // static $bindings = [];
-    
     function __construct(
         private string $method,
         private string $route,
@@ -16,7 +14,10 @@ class Routine
             $this->route = "/$this->route";
         }
 
-        if ( Route::$grouping_started ) {
+        /**
+         * If group is running then route is part of the group
+         */
+        if ( static::isGroupRunning() ) {
             $this->route = "%PREFIX%$this->route";
         }
     }
@@ -48,14 +49,14 @@ class Routine
         if ( $this->method AND $this->route ) {
 
             // duplicate
-            if ( array_key_exists($this->route, Route::$routines[$this->method]) ) {
-                throw new \Exception("Duplicate route $this->route => " . json_encode(Route::$routines[$this->method][$this->route]));
+            if ( array_key_exists($this->route, static::getMethodSignatures($this->method)) ) {
+                throw new \Exception("Duplicate route $this->route => " . json_encode(static::getRouteSignature($this->method, $this->route)));
             }
 
             if ( $this->action ) {
-                Route::$routines[$this->method][$this->route] = [$this->controller, $this->action];
+                static::setRouteSignature($this->method, $this->route, [$this->controller, $this->action]);
             } elseif ( $this->callback ) {
-                Route::$routines[$this->method][$this->route] = $this->callback;
+                static::setRouteSignature($this->method, $this->route, $this->callback);
             }
         }
     }
@@ -63,11 +64,10 @@ class Routine
     function unbind()
     {
         if ( $this->method ) {
-            $routine = Route::$routines[$this->method];
 
-            foreach ($routine as $route => $controller) {
+            foreach (static::getMethodSignatures($this->method) as $route => $controller) {
                 if ($route == $this->route) {
-                    unset(Route::$routines[$this->method][$this->route]);
+                    static::unsetRouteSignature($this->method, $this->route);
                     break;
                 }
             }
@@ -172,7 +172,7 @@ class Routine
     {
         $uid = uniqid('gard-');
         
-        Route::$registered_guards[$uid] = [
+        Routing::$registered_guards[$uid] = [
             'param' => $param,
             'callback' => $callback
         ];

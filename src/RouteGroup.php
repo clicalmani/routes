@@ -8,26 +8,25 @@ class RouteGroup
     public function __construct(private \Closure $callable) 
     {
         $routes = Route::all();
-        Route::startGrouping($this->callable);
+        Route::runGroup($this->callable);
         $this->group = array_diff(Route::all(), $routes);
     }
 
     public function prefix($prefix)
     {
-        $this->group = Route::setPrefix($this->group, $prefix); 
+        $this->group = Route::prefix($this->group, $prefix); 
         return $this;
     }
 
     public function middleware($name)
     {
-        $method  = strtolower( $_SERVER['REQUEST_METHOD'] );
-        $routine = Route::$routines[$method];
+        $method     = strtolower( Route::getCurrentRouteMethod() );
         
-        foreach ($routine as $sroute => $controller) {
+        foreach (Route::getMethodSignatures($method) as $sroute => $controller) {
             
             if ( !in_array($sroute, $this->group)) continue;  // Exclude route
             
-            Route::$route_middlewares[$sroute][] = $name; 
+            Route::extendRouteMiddlewares($sroute, $name);
         }
     }
 }
