@@ -1,28 +1,36 @@
 <?php
 namespace Clicalmani\Routes;
 
-class Routine extends Route
+/**
+ * RouteValidator class
+ * 
+ * @package clicalmani/routes 
+ * @author @clicalmani
+ */
+class RouteValidator extends Routing
 {
-    function __construct(
+    public function __construct(
         private string $method,
         private string $route,
-        private ? string $action,
-        private ? string $controller,
-        private ? \Closure $callback
+        private ?string $action,
+        private ?string $controller,
+        private ?\Closure $callback
     ) {
+        // Auto prepend backslash
         if ( '' !== $this->route AND 0 !== strpos($this->route, '/') ) {
             $this->route = "/$this->route";
         }
 
-        /**
-         * If group is running then route is part of the group
-         */
+        // Prepend group prefix when grouping routes
         if ( static::isGroupRunning() ) {
             $this->route = "%PREFIX%$this->route";
         }
     }
 
-    function __get($parameter)
+    /**
+     * @override Getter
+     */
+    public function __get(mixed $parameter)
     {
         switch ($parameter) {
             case 'method': return $this->method;
@@ -33,7 +41,10 @@ class Routine extends Route
         }
     }
 
-    function __set($parameter, $value)
+    /**
+     * @override Setter
+     */
+    public function __set(mixed $parameter, mixed $value)
     {
         switch ($parameter) {
             case 'method': $this->method = $value; break;
@@ -44,7 +55,12 @@ class Routine extends Route
         }
     }
 
-    function bind()
+    /**
+     * Check for duplicate routes and define route signature
+     * 
+     * @return void
+     */
+    public function bind() : void
     {
         if ( $this->method AND $this->route ) {
 
@@ -54,27 +70,39 @@ class Routine extends Route
             }
 
             if ( $this->action ) {
-                static::setRouteSignature($this->method, $this->route, [$this->controller, $this->action]);
+                static::defineRouteSignature($this->method, $this->route, [$this->controller, $this->action]);
             } elseif ( $this->callback ) {
-                static::setRouteSignature($this->method, $this->route, $this->callback);
+                static::defineRouteSignature($this->method, $this->route, $this->callback);
             }
         }
     }
 
-    function unbind()
+    /**
+     * Undefine route signature
+     * 
+     * @return void
+     */
+    public function unbind() : void
     {
         if ( $this->method ) {
 
             foreach (static::getMethodSignatures($this->method) as $route => $controller) {
                 if ($route == $this->route) {
-                    static::unsetRouteSignature($this->method, $this->route);
+                    static::undefineRouteSignature($this->method, $this->route);
                     break;
                 }
             }
         }
     }
 
-    private function revalidateParam($param, $validator)
+    /**
+     * Revalidate a parameter
+     * 
+     * @param string $param
+     * @param string $validator
+     * @return void
+     */
+    private function revalidateParam(string $param,string $validator) : void
     {
         $this->unbind();
         
@@ -84,12 +112,12 @@ class Routine extends Route
     }
 
     /**
-     * Finds whether the parameter value is numeric.
+     * Validate numeric parameter's value.
      * 
-     * @param $params [mixed] Array or string
-     * @return \Clicalmani\Routes\Routine
+     * @param string|array $params
+     * @return static
      */
-    function whereNumber($params)
+    public function whereNumber(string|array $params) : static
     {
         if ( is_string($params) ) $params = [$params];
 
@@ -99,12 +127,12 @@ class Routine extends Route
     }
 
     /**
-     * Finds whether the parameter value is an int.
+     * Validate integer parameter's value.
      * 
-     * @param $param [mixed] Array or string
-     * @return \Clicalmani\Routes\Routine
+     * @param string|array $params
+     * @return static
      */
-    function whereInt($params)
+    public function whereInt(string|array $params) : static
     {
         if ( is_string($params) ) $params = [$params];
 
@@ -114,12 +142,12 @@ class Routine extends Route
     }
 
     /**
-     * Finds whether the parameter value is float.
+     * Validate float parameter's value
      * 
-     * @param $param [string] Array or string
-     * @return \Clicalmani\Routes\Routine
+     * @param string|array $params
+     * @return static
      */
-    function whereFloat($params)
+    public function whereFloat(string|array $params) : static
     {
         if ( is_string($params) ) $params = [$params];
 
@@ -129,13 +157,13 @@ class Routine extends Route
     }
 
     /**
-     * Verifies if the parameter value exists in the provided list.
+     * Validate parameter's against an enumerated values.
      * 
-     * @param $param [string] Route parameter
-     * @param $list [string] comma seperated list
-     * @return \Clicalmani\Routes\Routine
+     * @param string|array $params
+     * @param ?array $list Enumerated list
+     * @return static
      */
-    function whereEnum($params, $list = [])
+    public function whereEnum(string|array $params, ?array $list = []) : static
     {
         if ( is_string($params) ) $params = [$params];
 
@@ -145,13 +173,13 @@ class Routine extends Route
     }
 
     /**
-     * Adds param validation against a regular expresion.
+     * Validate parameter's value against a regular expression.
      * 
-     * @param $param [string] Route parameter
-     * @param $pattern [string] a regular expression pattern without delimeters.
-     * @return \Clicalmani\Routes\Routine
+     * @param string|array $params
+     * @param string $pattern A regular expression pattern without delimeters. Back slash (/) character will be used as delimiter
+     * @return static
      */
-    function where($params, $pattern)
+    public function where(string|array $params, string $pattern) : static
     {
         if ( is_string($params) ) $params = [$params];
 
@@ -161,22 +189,19 @@ class Routine extends Route
     }
 
     /**
-     * Add a navigation hook that is executed before navigation. The callback function is passed the current param value and returns a boolean value.
+     * Add a before navigation hook. The callback function is passed the current param value and returns a boolean value.
      * If the callback function returns false, the navigation will be canceled.
      * 
-     * @param $param [string] Route parameter
-     * @param $callback [Closure] a callback function to be executed before navigation.
-     * @return \Clicalmani\Routes\Routine
+     * @param string $param
+     * @param callable $callback A callback function to be executed before navigation. The function receive the parameter value
+     * as it's unique argument and must return false to halt the navigation, or true otherwise.
+     * @return static
      */
-    function guardAgainst($param, $callback)
+    public function guardAgainst($param, $callback) : static
     {
         $uid = uniqid('gard-');
         
-        Routing::$registered_guards[$uid] = [
-            'param' => $param,
-            'callback' => $callback
-        ];
-
+        self::registerGuard($uid, $param, $callback);
         self::revalidateParam($param, '@{"uid": "' . $uid . '"}');
 
         return $this;

@@ -1,6 +1,12 @@
 <?php 
 namespace Clicalmani\Routes;
 
+/**
+ * Routing class
+ * 
+ * @package clicalmani/routes 
+ * @author @clicalmani
+ */
 class Routing extends Route
 {
     /**
@@ -8,7 +14,7 @@ class Routing extends Route
      * 
      * @var array
      */
-    public static $registered_guards = [];
+    private static $registered_guards = [];
 
     /**
      * Supported route parameters types for validation purpose
@@ -35,46 +41,35 @@ class Routing extends Route
     }
 
     /**
-     * Check wether the current route is registered
+     * Capture the request route, verify its existance and its validity. 
      * 
-     * @param string $method
-     * @return mixed 
+     * @return mixed The route signature key (the route syntax as defined) on success, false otherwise
      */
-    public static function exists(?string $method = null) : mixed
+    public static function route() : mixed
     {
-        $method = $method ?? strtolower( Route::getCurrentRouteMethod() );
-        $alpha  = self::getAlpha($method);
-        $sroute = self::find($alpha);
-        
-        if ($sroute) {
-
-            /**
-             * Keep a copy for next demand
-             */
-            // self::$current_route = $sroute;
-
-            return $sroute;
-        }
-
-        return false;
+        return self::find( 
+            self::getAlpha( 
+                self::getCurrentRouteMethod()
+            ) 
+        );
     }
 
     /**
-     * Computes routes with same number of sequences as the current route
+     * Computes routes with the same number of sequences as the current route
      * 
-     * @param string $method
+     * @param string $method Only signatures of the defined method will be searched for
      * @return array 
      */
     private static function getAlpha(string $method) : array
     {
+        // Computed sequences
         $alpha = [];
 
-        $nseq = self::getSequence( current_route() );
-        
-        $len        = count($nseq);
-        $signatures = self::getMethodSignatures($method);
+        // Current route length
+        $len = count( self::getSequence( current_route() ) );
             
-        foreach ($signatures as $sroute => $controller) {
+        foreach (self::getMethodSignatures($method) as $sroute => $controller) {
+
             $sseq = self::getSequence($sroute);
 
             if ($len !== count($sseq)) continue;
@@ -89,55 +84,42 @@ class Routing extends Route
      * Find the requested route
      * 
      * @param array $alpha
-     * @return mixed string on success or false on failure
+     * @return mixed Route signature key on success or false on failure
      */
     private static function find(array $alpha) : mixed
     {
-        /**
-         * Current route sequences
-         */
-        $nseq    = self::getSequence( current_route() );
+        // Current route sequences
+        $nseq = self::getSequence( current_route() );
 
-        /**
-         * Route with same structure as the current route (parameters and paths)
-         */
+        // Routes with same structure as the current route (same number of parameters and paths)
         $matches = [];
         
         foreach ($alpha as $sroute => $sseq) {
 
-            /**
-             * Reconstruct (put together the different parts) the route and compare it to the current route
-             */
+            // Reconstruct the route (put together the different parts) and compare it to the current route
             if ( self::compare( self::rebuild($sseq) ) ) {
                 $matches[$sroute] = $sseq;
             }
         }
         
-        /**
-         * Retrieve params indexes and values
-         */
+        // Retrieve params positions and values
         $a = array_diff($nseq, ...array_values($matches));
         
-        /**
-         * That's definitly the requested route
-         */
+        // Single match
         if ( count($matches) == 1) {
 
             $sseq   = array_values($matches)[0];
 
             foreach ($a as $key => $value) {
-                /**
-                 * Escape routes which did not pass validation
-                 */
+
+                // Escape routes which did not pass validation
                 if (false == self::isValidParameter($sseq[$key], $value)) return false;
             }
 
             return array_keys($matches)[0];
         }
         
-        /**
-         * Match routes with parameters
-         */
+        // Match routes with parameters
         if ( !empty($a) ) {
             
             foreach ($matches as $sroute => $sseq) {
@@ -148,9 +130,7 @@ class Routing extends Route
             }
         } 
         
-        /**
-         * Match routes without parameters
-         */
+        // Match routes without parameters
         else {
             foreach ($matches as $sroute => $sseq) {
                 if (self::compare($sseq)) return $sroute;
@@ -161,7 +141,7 @@ class Routing extends Route
     }
 
     /**
-     * Rebuild a route sequence by replacing parameters by their values (from request)
+     * Rebuild a route sequences by replacing parameters by their values (from the request)
      * 
      * @param array $sequence
      * @return array 
@@ -169,10 +149,10 @@ class Routing extends Route
     private static function rebuild(array $sequence) : array
     {
         // Current route sequences
-        $current_sequence  = self::getSequence( current_route() );
+        $current_sequence = self::getSequence( current_route() );
 
         // Holds the requested route parameters
-        $parameters  = [];
+        $parameters = [];
         
         foreach ($current_sequence as $index => $part) {
 
@@ -197,7 +177,7 @@ class Routing extends Route
     }
 
     /**
-     * compare route sequences to the requested route sequences
+     * compare route sequences to the current route sequences
      * 
      * @param array $sequences
      * @return bool true on success, of false on failure.
@@ -212,7 +192,7 @@ class Routing extends Route
      * 
      * @param string $param
      * @param string $value
-     * @return bool true on success, or false on failure
+     * @return bool true on success, false on failure
      */
     private static function isValidParameter(string $param, string $value)
     {
@@ -223,16 +203,48 @@ class Routing extends Route
             if ($validator AND self::validateParameter($validator, $value)) $name = self::getParameterName($param);
             else return false;
 
-        } else $name = substr($param, 1); // Remove (:) caracter
+        } else $name = substr($param, 1); // Remove (:) character
 
         /**
-         * Add to the request
+         * Make the parameter available to the request.
+         * We use the global $_REQUEST array so that the parameter can be access through global variables 
+         * such as $_GET and $_POST
          */
         $_REQUEST[$name] = $value;
 
         return true;
     }
 
+    /**
+     * Register a route guard
+     * 
+     * @param string $uid Guard's unique id
+     * @param string $param Parameter to guard against
+     * @param string $callback Callback function
+     * @return void
+     */
+    public static function registerGuard(string $uid, string $param, callable $callback) : void
+    {
+        static::$registered_guards[$uid] = [
+            'param' => $param,
+            'callback' => $callback
+        ];
+    }
+
+    /**
+     * Get a navigation guard
+     * 
+     * @param string $uid Guard unique id
+     * @return mixed Route guard on success, or null on failure
+     */
+    private static function getGuard(string $uid) : mixed
+    {
+        if ( array_key_exists($uid, static::$registered_guards) ) {
+            return static::$registered_guards[$uid];
+        }
+        
+        return null;
+    }
 
     private static function isHyphenParameter(string $param, string $value)
     {
@@ -241,10 +253,10 @@ class Routing extends Route
         $values = explode('-', $value);
 
         if (count($parts) == 2 AND count($values) == 2) {
-            $start = self::validateParameter($parts[0], $values[0]);
-            $end = self::validateParameter($parts[1], $values[1]);
+            // $start = self::validateParameter($parts[0], $values[0]);
+            // $end = self::validateParameter($parts[1], $values[1]);
 
-            if (false == $start OR false == $end) return false;
+            // if (false == $start OR false == $end) return false;
         }
 
         return true;
@@ -254,7 +266,7 @@ class Routing extends Route
      * Verify wether a parameter has a validator
      * 
      * @param string $param
-     * @return int<0, max>|false true on success, or false on failure
+     * @return int<0, max>|false true on success, false on failure
      */
     private static function hasValidator(string $param) : int|false
     {
@@ -262,7 +274,7 @@ class Routing extends Route
     }
 
     /**
-     * Retrive the parameter validation part
+     * Retrive the parameter's validation part
      * 
      * @param string $param
      * @return \stdClass|null
@@ -277,7 +289,7 @@ class Routing extends Route
     }
 
     /**
-     * Retrive parameter name
+     * Retrive parameter name for parameters with a validator.
      * 
      * @param string $param
      * @return string|false
@@ -290,14 +302,14 @@ class Routing extends Route
     /**
      * Validate a parameter
      * 
-     * @param string $param
+     * @param \stdClass $validator
      * @param string $value
-     * @return bool true on success, or false on failure
+     * @return bool true on success, false on failure
      */
-    private static function validateParameter($validator, $value) : bool
+    private static function validateParameter(\stdClass $validator, string $value) : bool
     {
         $valid = false;
-
+        
         if ( @ $validator->type) {
 
             if (in_array(@ $validator->type, self::PARAM_TYPES)) {
@@ -374,9 +386,13 @@ class Routing extends Route
          * Route guard is a user provided callback function which must return true on success or false on failure
          */
         elseif (@ $validator->uid) { 
-            $guard = @ self::$registered_guards[$validator->uid];
 
-            if ( $guard ) {
+            // Retrieve the guard
+            $guard = self::getGuard($validator->uid);
+
+            if ( $guard && is_callable($guard['callback']) ) {
+
+                // Pass parameter value to the guard
                 $valid = $guard['callback']($value);
             }
         }

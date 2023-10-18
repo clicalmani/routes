@@ -2,15 +2,24 @@
 namespace Clicalmani\Routes;
 
 use Clicalmani\Collection\Collection;
-use Clicalmani\Routes\Exceptions\RoutineNotFoundException;
 
 class ResourceRoutines implements \ArrayAccess
 {
+    /**
+     * Routine resource
+     * 
+     * @var string
+     */
     private string $resource;
 
+    /**
+     * Registered resources
+     * 
+     * @var array
+     */
     private static array $resources  = [];
 
-    function __construct(private Collection $storage = new Collection) {
+    public function __construct(private Collection $storage = new Collection) {
         $this->resource = '';
     }
     
@@ -18,7 +27,7 @@ class ResourceRoutines implements \ArrayAccess
 	 * (non-PHPdoc)
 	 * @see ArrayAccess::offsetExists()
 	 */
-	function offsetExists(mixed $routine) : bool
+	public function offsetExists(mixed $routine) : bool
 	{
         return $this->storage->filter(function($rt) use($routine) {
             return $rt == $routine;
@@ -28,7 +37,7 @@ class ResourceRoutines implements \ArrayAccess
     /** (non-PHPdoc)
      * @see ArrayAccess::offsetGet()
      */
-    function offsetGet(mixed $index) : mixed
+    public function offsetGet(mixed $index) : mixed
     {
         return $this->storage->filter(function($routine, $key) use($index) {
             return $index == $key;
@@ -39,7 +48,7 @@ class ResourceRoutines implements \ArrayAccess
 	 * (non-PHPdoc)
 	 * @see ArrayAccess::offsetSet()
 	 */
-	function offsetSet(mixed $old, mixed $new) : void
+	public function offsetSet(mixed $old, mixed $new) : void
 	{
         $this->storage->map(function($routine, $key) use($old, $new) {
             if ($routine == $old) {
@@ -54,7 +63,7 @@ class ResourceRoutines implements \ArrayAccess
 	 * (non-PHPdoc)
 	 * @see ArrayAccess::offsetUnset()
 	 */
-	function offsetUnset(mixed $routine) : void
+	public function offsetUnset(mixed $routine) : void
 	{
         $this->storage->filter(function($rt, $key) use($routine) {
             return $rt != $routine;
@@ -65,29 +74,42 @@ class ResourceRoutines implements \ArrayAccess
      * Get resource routines
      * 
      * @param string $resource
-     * @return \stdClass
+     * @return \stdClass|null
      */
-    public static function getRoutines(string $resource) : \stdClass
+    public static function getRoutines(string $resource) : \stdClass|null
     {
         if ( array_key_exists($resource, static::$resources) ) {
 			return (object) static::$resources[$resource];
 		}
-
-        throw new RoutineNotFoundException($resource);
+        
+        return null;
     }
 
-    function merge(ResourceRoutines $routines)
+    /**
+     * Merge resources
+     * 
+     * @param self $routine
+     * @return void
+     */
+    public function merge(self $routine) : void
     {
-        $this->storage->merge($routines);
+        $this->storage->merge($routine);
     }
 
-    function addResource(string $resource, ResourceRoutines $routines) : void
+    /**
+     * Add new resource
+     * 
+     * @param string $resource
+     * @param self $routine
+     * @return void
+     */
+    public function addResource(string $resource, self $routine) : void
     {
         $this->resource = $resource;
 
         if ( ! array_key_exists($resource, static::$resources) ) 
             static::$resources[$resource] = [
-                'object' => $routines, 
+                'object' => $routine, 
                 'methods' => [],                //     'methods' => [
                                                 //         'method1' => ['caller' => $closure, 'args' => ['arg1', 'arg2', ...]]
                                                 //         ....
@@ -98,12 +120,12 @@ class ResourceRoutines implements \ArrayAccess
     }
 
     /**
-     * Override the default not found behavior. It accept a closer that return the desired behavior.
+     * Override the default not found behaviour.
      * 
-     * @param Closure $closure a function that returns a response type.
-     * @return $this for chaining purpose.
+     * @param callable $closure A closure function that returns the response type.
+     * @return static
      */
-    function missing($closure)
+    public function missing(callable $closure) : static
     {
         if ( $this->resource ) {
             self::$resources[$this->resource]['methods'] = [
@@ -118,36 +140,46 @@ class ResourceRoutines implements \ArrayAccess
     }
 
     /**
-     * Show distinct rows on resources view
+     * Show distinct rows on resource view
      * 
-     * @param boolean $bool set to true to select distinct rows, or false otherwise. default false
-     * @return $this for chaining purpose.
+     * @param bool $enable
+     * @return static
      */
-    function distinct($bool = false)
+    public function distinct(bool $enable = false) : static
     {
         if ( $this->resource ) {
-            static::$resources[$this->resource]['properties']['distinct'] = $bool;
+            static::$resources[$this->resource]['properties']['distinct'] = $enable;
         }
 
         return $this;
     }
 
     /**
-     * Ignore on create action
+     * Ignore primary key duplicate warning
      * 
-     * @param boolean $bool set to true to ignore duplicate keys, or false to disable. default false
-     * @return $this for chaining purpose
+     * @param bool $enable
+     * @return static
      */
-    function ignore($bool = false)
+    public function ignore(bool $enable = false) : static
     {
         if ( $this->resource ) {
-            static::$resources[$this->resource]['properties']['ignore'] = $bool;
+            static::$resources[$this->resource]['properties']['ignore'] = $enable;
         }
 
         return $this;
     }
 
-    function join($class_or_object, $foreign_key, $original_key, $includes = [], $excludes = [])
+    /**
+     * Join resources
+     * 
+     * @param mixed $class_or_object
+     * @param string $foreign_key
+     * @param string $original_key
+     * @param array $includes Restrict to some specific resource methods
+     * @param array $excludes Exclude some specific resource methods
+     * @return static
+     */
+    public function join(mixed $class_or_object, string $foreign_key, ?string $original_key = null, ?array $includes = [], ?array $excludes = []) : static
     {
         if ( $this->resource ) {
             static::$resources[$this->resource]['joints'][] = [
@@ -162,44 +194,86 @@ class ResourceRoutines implements \ArrayAccess
         return $this;
     }
 
-    function joinInclude($class_or_object, $foreign_key, $original_key, $includes)
+    /**
+     * Join with inclusion
+     * 
+     * @param mixed $class_or_object
+     * @param string $foreign_key
+     * @param string $original_key
+     * @param array $includes
+     * @return static
+     */
+    public function joinInclude(mixed $class_or_object, string $foreign_key, ?string $original_key, ?array $includes = []) : static
     {
         return $this->join($class_or_object, $foreign_key, $original_key, $includes, []);
     }
 
-    function joinExclude($class_or_object, $foreign_key, $original_key, $excludes)
+    /**
+     * Join with exclusion
+     * 
+     * @param mixed $class_or_object
+     * @param string $foreign_key
+     * @param string $original_key
+     * @param array $includes
+     * @return static
+     */
+    public function joinExclude($class_or_object, $foreign_key, $original_key, $excludes)
     {
         return $this->join($class_or_object, $foreign_key, $original_key, [], $excludes);
     }
 
-    function from(string $fields)
+    /**
+     * From statement when deleting from multiple tables
+     * 
+     * @param string $table
+     * @return static
+     */
+    public function from(string $table) : static
     {
         if ( $this->resource ) {
-            static::$resources[$this->resource]['properties']['from'] = $fields;
+            static::$resources[$this->resource]['properties']['from'] = $table;
         }
 
         return $this;
     }
 
-    function calcRows(bool $calc = false)
+    /**
+     * Enable SQL CAL_FOUND_ROWS
+     * 
+     * @param bool $enable
+     * @return static
+     */
+    public function calcRows(?bool $enable = false) : static
     {
         if ( $this->resource ) {
-            static::$resources[$this->resource]['properties']['calc'] = $calc;
+            static::$resources[$this->resource]['properties']['calc'] = $enable;
         }
 
         return $this;
     }
 
-    function limit(int $limit = 0)
+    /**
+     * Limit number of rows in the result set
+     * 
+     * @param int $count
+     * @return static
+     */
+    public function limit(?int $count = 0) : static
     {
         if ( $this->resource ) {
-            static::$resources[$this->resource]['properties']['limit'] = $limit;
+            static::$resources[$this->resource]['properties']['limit'] = $count;
         }
 
         return $this;
     }
 
-    function offset(int $offset = 0)
+    /**
+     * Limit offset
+     * 
+     * @param int $offset
+     * @return static
+     */
+    public function offset(?int $offset = 0) : static
     {
         if ( $this->resource ) {
             static::$resources[$this->resource]['properties']['offset'] = $offset;
@@ -208,7 +282,13 @@ class ResourceRoutines implements \ArrayAccess
         return $this;
     }
 
-    function orderBy($order = 'NULL')
+    /**
+     * Order by
+     * 
+     * @param string $order
+     * @return static
+     */
+    public function orderBy(?string $order = 'NULL') : static
     {
         if ( $this->resource ) {
             static::$resources[$this->resource]['properties']['order_by'] = $order;
