@@ -1,6 +1,9 @@
 <?php 
 namespace Clicalmani\Routes;
 
+use Clicalmani\Flesco\Http\Requests\Request;
+use Clicalmani\Flesco\Providers\RouteServiceProvider;
+
 /**
  * Routing class
  * 
@@ -47,11 +50,19 @@ class Routing extends Route
      */
     public static function route() : mixed
     {
-        return self::find( 
+        $key = self::find( 
             self::getAlpha( 
                 self::getCurrentRouteMethod()
             ) 
         );
+
+        // Run before navigation hook
+        if ($hook = RouteHooks::getBeforeHook($key)) return $hook( new Request );
+
+        // Fire TPS
+        RouteServiceProvider::fireTPS($key);
+        
+        return $key;
     }
 
     /**

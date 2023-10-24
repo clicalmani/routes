@@ -548,6 +548,6 @@ class Route
      */
     public static function getController(string $method, string $route) : mixed
     {
-        return self::$signatures[$method][$route];
+        return @ self::$signatures[$method][$route];
     }
 }
