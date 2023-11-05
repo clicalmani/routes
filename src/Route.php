@@ -4,6 +4,8 @@ namespace Clicalmani\Routes;
 use Clicalmani\Flesco\Providers\ServiceProvider;
 use Clicalmani\Flesco\Exceptions\MiddlewareException;
 use Clicalmani\Flesco\Http\Requests\Request;
+use Clicalmani\Flesco\Http\Response\Response;
+use Clicalmani\Flesco\Support\Log;
 
 /**
  * Route class
@@ -16,6 +18,13 @@ class Route
     use RouteMethods;
 
     /**
+     * Current route signature
+     * 
+     * @var string
+     */
+    protected static $current_route_signature;
+
+    /**
      * Routes signatures
      * 
      * @var array
@@ -23,11 +32,20 @@ class Route
     protected static $signatures;
 
     /**
+     * Named routes
+     * 
+     * @var array
+     */
+    protected static $names = [];
+
+    /**
      * Midlewares
      * 
      * @var array
      */
     protected static $middlewares = [];
+
+    protected static $patterns = [];
 
     /**
      * Route grouping state (for internal use only)
@@ -51,6 +69,11 @@ class Route
             'put'     => [],
             'patch'   => []
         ];
+
+        /**
+         * Register route services
+         */
+        with( new \App\Providers\RouteServiceProvider )->register();
     }
 
     /**
@@ -68,6 +91,18 @@ class Route
         );
 
         return isset($url['path']) ? $url['path']: '/';
+    }
+
+    /**
+     * Get or set current route signature
+     * 
+     * @param string $signature
+     * @return mixed
+     */
+    public static function currentRouteSignature(?string $signature = null) : mixed
+    {
+        if ($signature) return static::$current_route_signature = $signature;
+        return static::$current_route_signature;
     }
 
     /**
@@ -164,11 +199,17 @@ class Route
      * Get route middlewares
      * 
      * @param string $route
-     * @return array
+     * @return mixed
      */
-    public static function getRouteMiddlewares(string $route) : array 
+    public static function getRouteMiddlewares(string $route) : mixed 
     {
-        return static::$middlewares[$route];
+        return @ static::$middlewares[$route];
+    }
+
+    public static function resetRouteMiddlewares(string $route, ?array $middlewares = []) 
+    {
+        if (!$middlewares) unset(static::$middlewares[$route]);
+        else static::$middlewares[$route] = $middlewares;
     }
 
     /**
@@ -230,28 +271,6 @@ class Route
     }
 
     /**
-     * Run routes group
-     * 
-     * @param callable $callback
-     * @return void
-     */
-    public static function runGroup($callback) : void
-    {
-        /**
-         * Start grouping
-         */
-        self::startGrouping();
-
-        // Run grouped routes
-        $callback();    
-
-        /**
-         * Stop grouping
-         */
-        self::stopGrouping();
-    }
-
-    /**
      * Return registered routes
      * 
      * @return array
@@ -268,50 +287,7 @@ class Route
 
         return $routes;
     }
-
-    /**
-     * Prefix routes
-     * 
-     * @param string|array $routes
-     * @param string $prefix
-     * @return array
-     */
-    public static function prefix(string|array $routes, string $prefix) : array
-    {
-        if ( is_string($routes) ) {
-            $routes = [$routes];
-        }
-
-        $ret = [];
-
-        foreach (self::$signatures as $method => $signature) {
-            foreach ($signature as $key => $action) {
-                if ( in_array($key, $routes) ) {
-                    
-                    // Temporary unregister route
-                    self::undefineRouteSignature($method, $key);
-                    
-                    if (preg_match('/%PREFIX%/', $key)) {
-                        $key = str_replace('%PREFIX%', $prefix, $key);
-                    } else $key = $prefix . $key;
-
-                    /**
-                     * Prepend backslash (/)
-                     */
-                    if (false == preg_match('/^\//', $key)) {
-                        $key = "/$key";
-                    }
-
-                    $ret[] = $key;
-
-                    self::defineRouteSignature($method, $key, $action);
-                }
-            }
-        }
-
-        return $ret;
-    }
-
+    
     /**
      * Get route gateway
      * 
@@ -356,15 +332,8 @@ class Route
      */
     public static function middleware(string $name, mixed $callback = null) : mixed
     {
-        if ( self::isMiddleware($name) ) {
-
-            $gateway = self::gateway();
-            $middleware = ServiceProvider::getProvidedMiddleware($gateway, $name);
-            
-            self::registerMiddleware($callback ? $callback: new $middleware, $name);
-
-            return $middleware;
-        } 
+        if ( $middleware = self::isMiddleware($name) ) 
+            return self::registerMiddleware($callback ? $callback: $middleware, $name);
 
         throw new MiddlewareException("Unknow middleware $name specified");
     }
@@ -372,34 +341,24 @@ class Route
     /**
      * Verify a middleware by name
      * 
-     * @param string $name
-     * @return bool
+     * @param string $class_or_name
+     * @return mixed
      */
-    private static function isMiddleware(string $name) : bool
+    private static function isMiddleware(string $class_or_name) : mixed
     {
-        $gateway = self::gateway();
+        /**
+         * Inline middleware
+         */
+        if (class_exists($class_or_name)) $middleware = $class_or_name;
 
         /**
-         * Verify if the name is registered in the middleware service provider
+         * Global middleware
          */
-        $middleware = ServiceProvider::getProvidedMiddleware($gateway, $name);
+        else $middleware = ServiceProvider::getProvidedMiddleware(self::gateway(), $class_or_name);
+
+        if ( null === $middleware ) return false;
         
-        if ( null === $middleware ) 
-            throw new MiddlewareException("Middleware $name can not be found");
-        
-        /**
-         * Must have a handler
-         */
-        if ( ! method_exists( $middleware, 'handler') ) 
-            throw new MiddlewareException("Handler method not provided in $name middleware");
-
-        /**
-         * Must have have an authorize method
-         */
-        if ( ! method_exists( $middleware, 'authorize') ) 
-            throw new MiddlewareException("Authorize method not provided in $name middleware");
-
-        return true;
+        return new $middleware;
     }
 
     /**
@@ -413,22 +372,7 @@ class Route
     {
         // Gather registered routes
         $routes = self::all();
-
-        if ($middleware instanceof \Closure) {
-            $middleware();
-        } else {
-
-            // Run middleware route group
-            $handler = $middleware->handler();
-            
-            if (false != $handler) {
-                if ( file_exists( $handler ) ) {
-                    include_once $handler;
-                } else {
-                    throw new MiddlewareException('Can not find handler provided');
-                }
-            }
-        }
+        $middleware?->boot();
 
         $method  = self::getCurrentRouteMethod();
         $signatures = self::$signatures[$method];
@@ -442,60 +386,31 @@ class Route
     }
 
     /**
-     * Return the current route registered middlewares
-     * 
-     * @return mixed
-     */
-    public static function getCurrentRouteMiddlewares() : mixed
-    {
-        $current_route = self::currentRoute();
-        
-        if ( self::isApi() && strpos(self::currentRoute(), self::getApiPrefix()) === 1 ) 
-            $current_route = substr(self::currentRoute(), strlen(self::getApiPrefix()) + 1);   // Remove api prefix
-        
-        $middlewares = null;
-
-        /**
-         * Not grouped routes
-         */
-        if ( array_key_exists($current_route, self::getMiddlewares()) ) 
-            $middlewares = self::getRouteMiddlewares($current_route);
-
-        /**
-         * Grouped routes
-         */
-        elseif (  array_key_exists('%PREFIX%' . $current_route, self::getMiddlewares()) ) 
-            $middlewares = self::getRouteMiddlewares('%PREFIX%' . $current_route);
-        
-        return $middlewares;
-    }
-
-    /**
      * Verfify if current route is behind a middleware
      * 
-     * @return bool
+     * @return int|bool
      */
-    public static function isCurrentRouteAuthorized(?Request $request = null) : bool
+    public static function isRouteAuthorized(string $route, ?Request $request = null) : int|bool
     {
-        $gateway = self::gateway();
-        $authorized = true;
+        $names = self::getRouteMiddlewares($route);
 
-        if ($names = self::getCurrentRouteMiddlewares()) {
+        foreach ($names as $name) {
+            if ($middleware = ServiceProvider::getProvidedMiddleware(self::gateway(), $name)) ;
+            else $middleware = $name;
 
-            foreach ($names as $name) {
-
-                $middleware = ServiceProvider::getProvidedMiddleware($gateway, $name);
-                $authorized = with ( new $middleware )?->authorize(
-                    ( $gateway === 'web' ) ? ( new Request )->user(): $request
+            if ( $middleware )
+                with( new $middleware )->handle(
+                    $request,
+                    new Response,
+                    fn() => http_response_code()
                 );
 
-                if (false == $authorized) {
-                    return false;
-                }
-            }
+            $response_code = http_response_code();
+            
+            if (200 !== $response_code) return $response_code;
         }
         
-        return $authorized;
+        return 200; // Authorized
     }
 
     /**
@@ -511,7 +426,7 @@ class Route
     {
         $action     = null;
         $controller = null;
-
+        
         /**
          * Class method action
          */
@@ -528,7 +443,7 @@ class Route
             $action = 'invoke';
             $controller = $callback;
             $callback = null;
-        }
+        } elseif (!$callback) $action = 'invoke';
 
         $validator = new RouteValidator($method, $route, $action, $controller, $callback);
         
@@ -549,5 +464,72 @@ class Route
     public static function getController(string $method, string $route) : mixed
     {
         return @ self::$signatures[$method][$route];
+    }
+
+    public static function pattern(string $param, string $pattern): void
+    {
+        static::$patterns[$param] = $pattern;
+    }
+
+    public static function name(string $route, ?string $name = null)
+    {
+        if (!$name) return static::$names[$route];
+
+        static::$names[$route] = $name;
+    }
+
+    /**
+     * Register global pattern
+     * 
+     * @param string $param Parameter name
+     * @param string $pattern
+     * @return void
+     */
+    public static function registerPattern(string $param, string $pattern) : void
+    {
+        static::$patterns[$param] = $pattern;
+    }
+
+    /**
+     * Get global patterns
+     * 
+     * @return array
+     */
+    public static function getGlobalPatterns()
+    {
+        return static::$patterns;
+    }
+
+    public static function resolve(mixed ...$params)
+    {
+        $route = $params[0];
+
+        if ($signature = self::findByName($route)) $route = $signature;
+
+        preg_match_all('/:[^\/]+/', (string) $route, $matches);
+
+        if ( count($matches) ) {
+            foreach ($matches[0] as $i => $param) {
+                $route = preg_replace('/' . $param . '([^\/])?/', $params[$i], $route);
+            }
+        }
+
+        return $route;
+    }
+
+    public static function findByName(string $name)
+    {
+        foreach (static::$names as $key => $n) {
+            if ($name === $n) return $key;
+        }
+
+        return null;
+    }
+
+    public static function controller(string $class)
+    {
+        $group = new RouteGroup;
+        $group->setController($class);
+        return $group;
     }
 }

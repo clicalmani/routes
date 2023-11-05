@@ -16,7 +16,7 @@ trait RouteMethods
      * @param mixed $action
      * @return \Clicalmani\Routes\RouteValidator
      */
-    public static function get(string $route, mixed $action) : RouteValidator
+    public static function get(string $route, mixed $action = null) : RouteValidator
     { 
         return self::register('get', $route, $action);
     }

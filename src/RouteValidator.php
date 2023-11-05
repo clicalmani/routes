@@ -1,6 +1,8 @@
 <?php
 namespace Clicalmani\Routes;
 
+use Clicalmani\Flesco\Support\Log;
+
 /**
  * RouteValidator class
  * 
@@ -24,6 +26,19 @@ class RouteValidator extends Routing
         // Prepend group prefix when grouping routes
         if ( static::isGroupRunning() ) {
             $this->route = "%PREFIX%$this->route";
+        }
+        
+        /**
+         * Validate global patterns
+         */
+        foreach (Route::getGlobalPatterns() as $param => $pattern) {
+
+            /**
+             * Check if the current route has a global pattern
+             */
+            if (preg_match('/:' . $param . '([^\/])?/', $this->route)) {
+                $this->route = preg_replace('/:' . $param . '([^\/])?/', ':' . $param . '@{"pattern": "' . $pattern . '"}', $this->route);
+            }
         }
     }
 
@@ -69,11 +84,19 @@ class RouteValidator extends Routing
                 throw new \Exception("Duplicate route $this->route => " . json_encode(static::getRouteSignature($this->method, $this->route)));
             }
 
-            if ( $this->action ) {
-                static::defineRouteSignature($this->method, $this->route, [$this->controller, $this->action]);
-            } elseif ( $this->callback ) {
-                static::defineRouteSignature($this->method, $this->route, $this->callback);
-            }
+            $action = null;
+
+            /**
+             * Route controller
+             */
+            if ( $this->action ) $action = [$this->controller, $this->action];
+
+            /**
+             * Route function
+             */
+            elseif ( $this->callback )  $action = $this->callback;
+
+            if (NULL !== $action) static::defineRouteSignature($this->method, $this->route, $action);
         }
     }
 
