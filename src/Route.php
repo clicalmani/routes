@@ -420,12 +420,12 @@ class Route
      * @param string $route
      * @param mixed $callback
      * @param bool $bind
-     * @return \Clicalmani\Routes\RouteValidator
+     * @return \Clicalmani\Routes\RouteValidator|\Clicalmani\Routes\RouteGroup
      */
-    private static function register(string $method, string $route, mixed $callback, bool $bind = true) : RouteValidator
+    private static function register(string $method, string $route, mixed $callback, bool $bind = true) : RouteValidator|RouteGroup
     {
-        $action     = null;
-        $controller = null;
+        $action      = null;
+        $controller  = null;
         
         /**
          * Class method action
@@ -442,16 +442,57 @@ class Route
         elseif ( is_string($callback) ) {
             $action = 'invoke';
             $controller = $callback;
-            $callback = null;
+            if (!preg_match('/\?:.*([^\/])?/', $route)) $callback = null;
         } elseif (!$callback) $action = 'invoke';
 
-        $validator = new RouteValidator($method, $route, $action, $controller, $callback);
-        
-        if ( $bind ) {
-            $validator->bind();
+        if (preg_match('/\?:.*([^\/])?/', $route)) {
+            
+            $options = self::createOptions($route);
+            
+            return tap((new RouteGroup(function() use($options, $method, $callback, $bind) {
+                foreach ($options as $option) self::register($method, $option, $callback, $bind);
+            }))->prefix(''), fn(RouteGroup $group) => $group->routes = $options);
         }
 
-        return $validator;
+        return tap( 
+            new RouteValidator($method, $route, $action, $controller, $callback),
+            function(RouteValidator $validator) use($bind) {
+                if ($bind) $validator->bind();
+            }
+        );
+    }
+
+    /**
+     * Create route options
+     * 
+     * @param string $route
+     * @return array Options
+     */
+    private static function createOptions(string $route) : array
+    {
+        preg_match_all('/\?:[a-zA-Z0-9]+([^\/])?/', $route, $matches);
+        $arr = preg_split('/\//', $route, -1, PREG_SPLIT_NO_EMPTY);
+        $inters = array_intersect($arr, [...array_values($matches[0])]);
+        $diff = array_diff($arr, [...array_values($matches[0])]);
+        
+        $routes = [];
+        $tmp = $route;
+
+        $routes[] = $route; // Plain route
+        
+        // Without options
+        foreach ($inters as $param) $tmp = preg_replace("/\\$param\/?/", "", $tmp);
+        $routes[] = rtrim($tmp, '/');
+
+        // Single option
+        $tmp = join('/', $diff);
+        foreach ($inters as $param) $routes[] = $tmp . "/$param";
+
+        foreach ($inters as $pos => $param) {
+            $routes[] = rtrim(preg_replace("/\\$param\/?/", "", $route), '/');
+        }
+        
+        return collection()->exchange($routes)->map(fn(string $route) => str_replace('?', '', $route))->toArray();
     }
 
     /**
@@ -466,23 +507,37 @@ class Route
         return @ self::$signatures[$method][$route];
     }
 
+    /**
+     * Set a global pattern
+     * 
+     * @param string $param Parameter name
+     * @param string $pattern A regular expression pattern without delimiters
+     * @return void
+     */
     public static function pattern(string $param, string $pattern): void
     {
         static::$patterns[$param] = $pattern;
     }
 
-    public static function name(string $route, ?string $name = null)
+    /**
+     * Name a route or get the route name. That will be useful for redirection.
+     * 
+     * @param string $route
+     * @param ?string $name Optinal route name
+     * @return mixed
+     */
+    public static function name(string $route, ?string $name = null) : mixed
     {
         if (!$name) return static::$names[$route];
 
-        static::$names[$route] = $name;
+        return static::$names[$route] = $name;
     }
 
     /**
      * Register global pattern
      * 
      * @param string $param Parameter name
-     * @param string $pattern
+     * @param string $pattern A regular expression pattern without delimiters
      * @return void
      */
     public static function registerPattern(string $param, string $pattern) : void
@@ -500,12 +555,21 @@ class Route
         return static::$patterns;
     }
 
-    public static function resolve(mixed ...$params)
+    /**
+     * Revolve a named route
+     * 
+     * @param mixed ...$params 
+     * @return mixed
+     */
+    public static function resolve(mixed ...$params) : mixed
     {
-        $route = $params[0];
+        /**
+         * The first parameter is the route name
+         */
+        $route = array_shift($params);
 
         if ($signature = self::findByName($route)) $route = $signature;
-
+        
         preg_match_all('/:[^\/]+/', (string) $route, $matches);
 
         if ( count($matches) ) {
@@ -517,7 +581,13 @@ class Route
         return $route;
     }
 
-    public static function findByName(string $name)
+    /**
+     * Find the route signature giving the route name
+     * 
+     * @param string $name Route name
+     * @return mixed
+     */
+    public static function findByName(string $name) : mixed
     {
         foreach (static::$names as $key => $n) {
             if ($name === $n) return $key;
@@ -526,10 +596,17 @@ class Route
         return null;
     }
 
-    public static function controller(string $class)
+    /**
+     * Controller routes
+     * 
+     * @param string $class Controller class
+     * @return \Clicalmani\Routes\RouteGroup
+     */
+    public static function controller(string $class) : RouteGroup
     {
-        $group = new RouteGroup;
-        $group->setController($class);
-        return $group;
+        return instance(
+            RouteGroup::class, 
+            fn(RouteGroup $instance) => $instance->controller = $class
+        );
     }
 }

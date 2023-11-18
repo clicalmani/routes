@@ -18,14 +18,38 @@ class RouteGroup
      */
     private $group;
 
+    /**
+     * Group controller
+     * 
+     * @var string
+     */
     private $controller;
 
+    /**
+     * Group routes
+     * Usefull for validation optional parameters
+     * 
+     * @var string[]
+     */
+    private $routes = [];
+
+    /**
+     * Constructor
+     * 
+     * @param ?\Closure $callback Call back function
+     */
     public function __construct(private ?\Closure $callback = null) 
     {
         if ($this->callback) $this->group($this->callback);
     }
 
-    public function group(callable $callback)
+    /**
+     * Controller group
+     * 
+     * @param callable $callback
+     * @return static
+     */
+    public function group(callable $callback) : static
     {
         $this->callback = $callback;
         $routes = Route::all();
@@ -64,10 +88,12 @@ class RouteGroup
      */
     public function prefix(string $prefix) : static
     {
+        $keys = [];
+
         foreach (Route::getSignatures() as $method => $signature) {
             foreach ($signature as $key => $action) {
                 if ( in_array($key, $this->group) ) {
-                    
+
                     // Temporary unregister route
                     Route::undefineRouteSignature($method, $key);
                     $middlewares = Route::getRouteMiddlewares($key);
@@ -85,11 +111,19 @@ class RouteGroup
                     
                     if ($this->controller) $action = [$this->controller, @ $action[0] ? $action[0]: 'invoke'];
 
+                    if (preg_match('/\?:.*([^\/])?/', $key)) {
+                        echo $key . '<br>';
+                    }
+
+                    $keys[] = $key;
+
                     Route::defineRouteSignature($method, $key, $action);
                     Route::resetRouteMiddlewares($key, $middlewares);
                 }
             }
         }
+
+        $this->group = $keys;
 
         return $this;
     }
@@ -113,22 +147,71 @@ class RouteGroup
     }
 
     /**
-     * Return the grouped routes
+     * Set parameter pattern. Useful for optional parameters
      * 
-     * @return array
+     * @param string $param
+     * @param string $pattern
+     * @return static
      */
-    public function getGroup()
+    public function pattern(string $param, string $pattern) : static
     {
-        return $this->group;
+        return $this->patterns([$param], [$pattern]);
     }
 
-    public function setController(string $class)
+    /**
+     * Set multiple patterns
+     * 
+     * @see RouteGroup::patterns()
+     * @param string[] $params
+     * @param string[] $patters
+     * @return static
+     */
+    public function patterns(array $params, array $patterns) : static
     {
-        $this->controller = $class;
+        foreach ($this->group as $route) {
+            foreach (Route::getSignatures() as $method => $signature) {
+                foreach ($signature as $key => $action) {
+                    if (strstr($key, $route)) {
+                        Route::undefineRouteSignature($method, $key);
+                        $middlewares = Route::getRouteMiddlewares($key);
+                        foreach ($params as $i => $param) {
+                            $key = str_replace('@{"pattern": "' . $patterns[$i] . '"}', '', $key);
+                            $key = preg_replace('/:' . $param . '([^\/])?/', ':' . $param . '@{"pattern": "' . $patterns[$i] . '"}', $key);
+                        }
+                        Route::defineRouteSignature($method, $key, $action);
+                        Route::resetRouteMiddlewares($key, $middlewares);
+                    }
+                }
+            }
+        }
+
+        return $this;
     }
 
-    public function getController()
+    /**
+     * (non-PHPDoc)
+     * @overriden
+     * 
+     * @param string $name
+     * @return mixed
+     */
+    public function __get(string $name)
     {
-        return $this->controller;
+        if ($name === 'controller') return $this->controller;
+        elseif ($name === 'routes') return $this->routes;
+    }
+
+    /**
+     * (non-PHPDoc)
+     * @overriden
+     * 
+     * @param string $name
+     * @param mixed $value
+     * @return mixed
+     */
+    public function __set(string $name, mixed $value)
+    {
+        if ($name === 'controller') $this->controller = $value;
+        elseif ($name === 'routes') $this->routes = $value;
     }
 }

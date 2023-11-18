@@ -9,7 +9,7 @@ use Clicalmani\Flesco\Support\Log;
  * @package clicalmani/routes 
  * @author @clicalmani
  */
-class RouteValidator extends Routing
+class RouteValidator
 {
     public function __construct(
         private string $method,
@@ -24,7 +24,7 @@ class RouteValidator extends Routing
         }
 
         // Prepend group prefix when grouping routes
-        if ( static::isGroupRunning() ) {
+        if ( Route::isGroupRunning() ) {
             $this->route = "%PREFIX%$this->route";
         }
         
@@ -80,8 +80,8 @@ class RouteValidator extends Routing
         if ( $this->method AND $this->route ) {
 
             // duplicate
-            if ( array_key_exists($this->route, static::getMethodSignatures($this->method)) ) {
-                throw new \Exception("Duplicate route $this->route => " . json_encode(static::getRouteSignature($this->method, $this->route)));
+            if ( array_key_exists($this->route, Route::getMethodSignatures($this->method)) ) {
+                throw new \Exception("Duplicate route $this->route => " . json_encode(Route::getRouteSignature($this->method, $this->route)));
             }
 
             $action = null;
@@ -96,7 +96,7 @@ class RouteValidator extends Routing
              */
             elseif ( $this->callback )  $action = $this->callback;
 
-            if (NULL !== $action) static::defineRouteSignature($this->method, $this->route, $action);
+            if (NULL !== $action) Route::defineRouteSignature($this->method, $this->route, $action);
         }
     }
 
@@ -109,9 +109,9 @@ class RouteValidator extends Routing
     {
         if ( $this->method ) {
 
-            foreach (static::getMethodSignatures($this->method) as $route => $controller) {
+            foreach (Route::getMethodSignatures($this->method) as $route => $controller) {
                 if ($route == $this->route) {
-                    static::undefineRouteSignature($this->method, $this->route);
+                    Route::undefineRouteSignature($this->method, $this->route);
                     break;
                 }
             }
@@ -142,7 +142,7 @@ class RouteValidator extends Routing
      */
     public function whereNumber(string|array $params) : static
     {
-        if ( is_string($params) ) $params = [$params];
+        $params = (array)$params;
 
         foreach ($params as $param) self::revalidateParam($param, '@{"type": "numeric"}');
         
@@ -157,7 +157,7 @@ class RouteValidator extends Routing
      */
     public function whereInt(string|array $params) : static
     {
-        if ( is_string($params) ) $params = [$params];
+        $params = (array)$params;
 
         foreach ($params as $param) self::revalidateParam($param, '@{"type": "int"}');
         
@@ -172,7 +172,7 @@ class RouteValidator extends Routing
      */
     public function whereFloat(string|array $params) : static
     {
-        if ( is_string($params) ) $params = [$params];
+        $params = (array)$params;
 
         foreach ($params as $param) self::revalidateParam($param, '@{"type": "float"}');
         
@@ -188,7 +188,7 @@ class RouteValidator extends Routing
      */
     public function whereEnum(string|array $params, ?array $list = []) : static
     {
-        if ( is_string($params) ) $params = [$params];
+        $params = (array)$params;
 
         foreach ($params as $param) self::revalidateParam($param, '@{"enum": "' . join(',', $list) . '"}');
         
@@ -204,7 +204,7 @@ class RouteValidator extends Routing
      */
     public function where(string|array $params, string $pattern) : static
     {
-        if ( is_string($params) ) $params = [$params];
+        $params = (array)$params;
 
         foreach ($params as $param) self::revalidateParam($param, '@{"pattern": "' . $pattern . '"}');
         
@@ -224,9 +224,33 @@ class RouteValidator extends Routing
     {
         $uid = uniqid('gard-');
         
-        self::registerGuard($uid, $param, $callback);
+        Routing::registerGuard($uid, $param, $callback);
         self::revalidateParam($param, '@{"uid": "' . $uid . '"}');
 
         return $this;
+    } 
+
+    /**
+     * Define route middleware
+     * 
+     * @param string $name Middleware name all class
+     * @return static
+     */
+    public function middleware(string $name_or_class) : static
+    {
+        Route::extendRouteMiddlewares($this->route, $name_or_class);
+
+        return $this;
+    }
+
+    /**
+     * Define route name
+     * 
+     * @param string $name
+     * @return void
+     */
+    public function name(string $name) : void
+    {
+        Route::name($this->route, $name);
     }
 }

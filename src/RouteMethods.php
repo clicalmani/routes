@@ -14,9 +14,9 @@ trait RouteMethods
      * 
      * @param string $route
      * @param mixed $action
-     * @return \Clicalmani\Routes\RouteValidator
+     * @return \Clicalmani\Routes\RouteValidator|\Clicalmani\Routes\RouteGroup
      */
-    public static function get(string $route, mixed $action = null) : RouteValidator
+    public static function get(string $route, mixed $action = null) : RouteValidator|RouteGroup
     { 
         return self::register('get', $route, $action);
     }
@@ -26,9 +26,9 @@ trait RouteMethods
      * 
      * @param string $route
      * @param mixed $action
-     * @return \Clicalmani\Routes\RouteValidator
+     * @return \Clicalmani\Routes\RouteValidator|\Clicalmani\Routes\RouteGroup
      */
-    public static function post(string $route, mixed $action) : RouteValidator
+    public static function post(string $route, mixed $action) : RouteValidator|RouteGroup
     {
         return self::register('post', $route, $action);
     }
@@ -38,9 +38,9 @@ trait RouteMethods
      * 
      * @param string $route
      * @param mixed $action
-     * @return \Clicalmani\Routes\RouteValidator
+     * @return \Clicalmani\Routes\RouteValidator|\Clicalmani\Routes\RouteGroup
      */
-    public static function patch(string $route, mixed $action) : RouteValidator
+    public static function patch(string $route, mixed $action) : RouteValidator|RouteGroup
     {
         return self::register('patch', $route, $action);
     }
@@ -50,9 +50,9 @@ trait RouteMethods
      * 
      * @param string $route
      * @param mixed $action
-     * @return \Clicalmani\Routes\RouteValidator
+     * @return \Clicalmani\Routes\RouteValidator|\Clicalmani\Routes\RouteGroup
      */
-    public static function put(string $route, mixed $action) : RouteValidator
+    public static function put(string $route, mixed $action) : RouteValidator|RouteGroup
     {
         return self::register('put', $route, $action);
     }
@@ -62,9 +62,9 @@ trait RouteMethods
      * 
      * @param string $route
      * @param mixed $action
-     * @return \Clicalmani\Routes\RouteValidator
+     * @return \Clicalmani\Routes\RouteValidator|\Clicalmani\Routes\RouteGroup
      */
-    public static function options(string $route, mixed $action) : RouteValidator
+    public static function options(string $route, mixed $action) : RouteValidator|RouteGroup
     {
         return self::register('options', $route, $action);
     }
@@ -74,9 +74,9 @@ trait RouteMethods
      * 
      * @param string $route
      * @param mixed $action
-     * @return \Clicalmani\Routes\RouteValidator
+     * @return \Clicalmani\Routes\RouteValidator|\Clicalmani\Routes\RouteGroup
      */
-    public static function delete(string $route, mixed $action) : RouteValidator
+    public static function delete(string $route, mixed $action) : RouteValidator|RouteGroup
     {
         return self::register('delete', $route, $action);
     }
