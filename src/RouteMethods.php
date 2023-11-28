@@ -129,11 +129,11 @@ trait RouteMethods
         $routines = new ResourceRoutines;
 
         $routes = [
-            'get'    => ['index' => '', 'create' => 'create', 'show' => ':id', 'edit' => ':id/edit'],
+            'get'    => ['index' => '', 'create' => 'create', 'show' => ':id@{"pattern": "[0-9]+"}', 'edit' => ':id@{"pattern": "[0-9]+"}/edit'],
             'post'   => ['store' => ''],
-            'put'    => ['update' => ':id'],
-            'patch'  => ['update' => ':id'],
-            'delete' => ['destroy' => ':id']
+            'put'    => ['update' => ':id@{"pattern": "[0-9]+"}'],
+            'patch'  => ['update' => ':id@{"pattern": "[0-9]+"}'],
+            'delete' => ['destroy' => ':id@{"pattern": "[0-9]+"}']
         ];
 
         foreach ($routes as $method => $sigs) {
@@ -176,11 +176,11 @@ trait RouteMethods
         $routines = new ResourceRoutines;
 
         $routes = [
-            'get'    => ['index' => '', 'create' => ':id'],
+            'get'    => ['index' => '', 'create' => ':id@{"pattern": "[0-9]+"}'],
             'post'   => ['store' => ''],
-            'put'    => ['update' => ':id'],
-            'patch'  => ['update' => ':id'],
-            'delete' => ['destroy' => ':id']
+            'put'    => ['update' => ':id@{"pattern": "[0-9]+"}'],
+            'patch'  => ['update' => ':id@{"pattern": "[0-9]+"}'],
+            'delete' => ['destroy' => ':id@{"pattern": "[0-9]+"}']
         ];
 
         foreach ($routes as $method => $sigs) {

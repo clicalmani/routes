@@ -426,26 +426,31 @@ class Route
     {
         $action      = null;
         $controller  = null;
-        
-        /**
-         * Class method action
-         */
-        if ( is_array($callback) AND count($callback) == 2 ) {
-            $action = $callback[1];
-            $controller = $callback[0];
-            $callback = null;
-        } 
+
+        if (!preg_match('/\?:.*([^\/])?/', $route)) {
+            /**
+             * Class method action
+             */
+            if ( is_array($callback) AND count($callback) == 2 ) {
+                $action = $callback[1];
+                $controller = $callback[0];
+                $callback = null;
+            } 
+
+            /**
+             * Magic invoke method
+             */
+            elseif ( is_string($callback) ) {
+                $action = 'invoke';
+                $controller = $callback;
+                $callback = null;
+            } elseif (!$callback) $action = 'invoke';
+        }
 
         /**
-         * Magic invoke method
+         * Optional parameters needs to be grouped
          */
-        elseif ( is_string($callback) ) {
-            $action = 'invoke';
-            $controller = $callback;
-            if (!preg_match('/\?:.*([^\/])?/', $route)) $callback = null;
-        } elseif (!$callback) $action = 'invoke';
-
-        if (preg_match('/\?:.*([^\/])?/', $route)) {
+        else {
             
             $options = self::createOptions($route);
             
@@ -484,12 +489,14 @@ class Route
         foreach ($inters as $param) $tmp = preg_replace("/\\$param\/?/", "", $tmp);
         $routes[] = rtrim($tmp, '/');
 
-        // Single option
-        $tmp = join('/', $diff);
-        foreach ($inters as $param) $routes[] = $tmp . "/$param";
+        if (count($matches[0]) > 1) {
+            // Single option
+            $tmp = join('/', $diff);
+            foreach ($inters as $param) $routes[] = $tmp . "/$param";
 
-        foreach ($inters as $pos => $param) {
-            $routes[] = rtrim(preg_replace("/\\$param\/?/", "", $route), '/');
+            foreach ($inters as $pos => $param) {
+                $routes[] = rtrim(preg_replace("/\\$param\/?/", "", $route), '/');
+            }
         }
         
         return collection()->exchange($routes)->map(fn(string $route) => str_replace('?', '', $route))->toArray();
