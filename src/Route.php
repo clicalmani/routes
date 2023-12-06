@@ -5,7 +5,6 @@ use Clicalmani\Flesco\Providers\ServiceProvider;
 use Clicalmani\Flesco\Exceptions\MiddlewareException;
 use Clicalmani\Flesco\Http\Requests\Request;
 use Clicalmani\Flesco\Http\Response\Response;
-use Clicalmani\Flesco\Support\Log;
 
 /**
  * Route class
@@ -499,7 +498,7 @@ class Route
             }
         }
         
-        return collection()->exchange($routes)->map(fn(string $route) => str_replace('?', '', $route))->toArray();
+        return collection()->exchange($routes)->map(fn(string $route) => str_replace('?', '', $route))->unique()->toArray();
     }
 
     /**

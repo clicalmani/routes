@@ -1,8 +1,6 @@
 <?php
 namespace Clicalmani\Routes;
 
-use Clicalmani\Flesco\Support\Log;
-
 /**
  * RouteGroup class
  * 
