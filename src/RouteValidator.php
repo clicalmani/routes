@@ -93,7 +93,7 @@ class RouteValidator
              * Route function
              */
             elseif ( $this->callback )  $action = $this->callback;
-
+            
             if (NULL !== $action) Route::defineRouteSignature($this->method, $this->route, $action);
         }
     }

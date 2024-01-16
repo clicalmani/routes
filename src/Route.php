@@ -68,7 +68,7 @@ class Route
             'put'     => [],
             'patch'   => []
         ];
-
+        
         /**
          * Register route services
          */
@@ -314,6 +314,8 @@ class Route
      */
     public static function isApi() : bool
     {
+        if ( inConsoleMode() && defined('CONSOLE_API_ROUTE') ) return true;
+        
         $api = self::getApiPrefix();
         
         return preg_match(
@@ -392,11 +394,11 @@ class Route
     public static function isRouteAuthorized(string $route, ?Request $request = null) : int|bool
     {
         $names = self::getRouteMiddlewares($route);
-
+        
         foreach ($names as $name) {
             if ($middleware = ServiceProvider::getProvidedMiddleware(self::gateway(), $name)) ;
             else $middleware = $name;
-
+            
             if ( $middleware )
                 with( new $middleware )->handle(
                     $request,
@@ -425,7 +427,7 @@ class Route
     {
         $action      = null;
         $controller  = null;
-
+        
         if (!preg_match('/\?:.*([^\/])?/', $route)) {
             /**
              * Class method action
@@ -562,7 +564,7 @@ class Route
     }
 
     /**
-     * Revolve a named route
+     * Revolve a named route. 
      * 
      * @param mixed ...$params 
      * @return mixed
