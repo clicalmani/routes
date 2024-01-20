@@ -169,7 +169,7 @@ class Route
      */
     public static function getCurrentRouteMethod() : string
     {
-        return strtolower( $_SERVER['REQUEST_METHOD'] );
+        return strtolower( (string) @ $_SERVER['REQUEST_METHOD'] );
     }
 
     /**
@@ -376,7 +376,7 @@ class Route
         $middleware?->boot();
 
         $method  = self::getCurrentRouteMethod();
-        $signatures = self::$signatures[$method];
+        $signatures = (array) @ self::$signatures[$method];
             
         foreach ($signatures as $key => $action) {
             

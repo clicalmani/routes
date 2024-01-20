@@ -19,7 +19,7 @@ class ResourceRoutines implements \ArrayAccess
      */
     private static array $resources  = [];
 
-    public function __construct(private Collection $storage = new Collection) {
+    public function __construct(private ?Collection $storage = new Collection) {
         $this->resource = '';
     }
     
@@ -145,7 +145,7 @@ class ResourceRoutines implements \ArrayAccess
      * @param bool $enable
      * @return static
      */
-    public function distinct(bool $enable = false) : static
+    public function distinct(?bool $enable = false) : static
     {
         if ( $this->resource ) {
             static::$resources[$this->resource]['properties']['distinct'] = $enable;
@@ -160,7 +160,7 @@ class ResourceRoutines implements \ArrayAccess
      * @param bool $enable
      * @return static
      */
-    public function ignore(bool $enable = false) : static
+    public function ignore(?bool $enable = false) : static
     {
         if ( $this->resource ) {
             static::$resources[$this->resource]['properties']['ignore'] = $enable;
@@ -183,8 +183,8 @@ class ResourceRoutines implements \ArrayAccess
     {
         if ( $this->resource ) {
             static::$resources[$this->resource]['joints'][] = [
-                'class' => $class_or_object,
-                'foreign' => $foreign_key,
+                'class'    => $class_or_object,
+                'foreign'  => $foreign_key,
                 'original' => $original_key,
                 'includes' => $includes,
                 'excludes' => $excludes
