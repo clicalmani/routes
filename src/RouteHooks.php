@@ -41,7 +41,7 @@ class RouteHooks
      * @param string $route
      * @return mixed
      */
-    public static function getafterHook(string $route) : mixed
+    public static function getAfterHook(string $route) : mixed
     {
         if (array_key_exists($route, static::$hooks)) return static::$hooks[$route]['after'];
 

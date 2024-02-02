@@ -195,7 +195,8 @@ class Routing extends Route
      */
     private static function compare(array $sequences) : bool
     {
-        return '/' . join('/', $sequences) == current_route();
+        if ('/' . Route::getApiPrefix() . '/svc' === current_route()) return true;
+        return '/' . join('/', $sequences) === current_route();
     }
 
     /**
