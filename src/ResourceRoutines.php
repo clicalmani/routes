@@ -296,4 +296,13 @@ class ResourceRoutines implements \ArrayAccess
 
         return $this;
     }
+
+    public function middleware(string $name_or_class)
+    {
+        if ( $this->resource ) {
+            static::$resources[$this->resource]['properties']['middleware'] = $name_or_class;
+        }
+
+        return $this;
+    }
 }

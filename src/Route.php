@@ -373,7 +373,8 @@ class Route
     {
         // Gather registered routes
         $routes = self::all();
-        $middleware?->boot();
+        if ($middleware && method_exists($middleware, 'boot')) $middleware->boot();
+        elseif (is_callable($middleware)) $middleware();
 
         $method  = self::getCurrentRouteMethod();
         $signatures = (array) @ self::$signatures[$method];
@@ -399,6 +400,14 @@ class Route
         if (self::isServiceRoute()) return http_response_code();
 
         $names = self::getRouteMiddlewares($route);
+
+        /**
+         * Registered runtime middleware
+         */
+        $resource = self::getResource($route);
+        if (array_key_exists('middleware', (array) $resource?->properties) ) {
+            if ($request->hash) $names[] = $resource->properties['middleware'];
+        }
         
         foreach ($names as $name) {
             if ($middleware = ServiceProvider::getProvidedMiddleware(self::gateway(), $name)) ;
@@ -635,5 +644,17 @@ class Route
     private static function isServiceRoute()
     {
         return preg_match('/^\/' . self::getApiPrefix() . '\/svc/', current_route());
+    }
+
+    private static function getResource(string $signature)
+    {
+        if ( inConsoleMode() ) return null;
+
+		// Resource
+		$sseq = preg_split('/\//', $signature, -1, PREG_SPLIT_NO_EMPTY);
+		
+		return ResourceRoutines::getRoutines(
+			Route::isApi() ? $sseq[1]: $sseq[0]
+		);
     }
 }

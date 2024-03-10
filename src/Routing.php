@@ -355,6 +355,11 @@ class Routing extends Route
                      * Float validation: whether parameter value is a float value
                      */
                     case 'float': $valid = is_float($value); break;
+
+                    /**
+                     * Token validation
+                     */
+                    case 'token': $valid = (bool) verify_token($value); break;
                 }
             }
         } 

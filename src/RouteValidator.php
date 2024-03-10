@@ -194,6 +194,21 @@ class RouteValidator
     }
 
     /**
+     * Validate a token
+     * 
+     * @param string|array $params
+     * @return static
+     */
+    public function whereToken(string|array $params) : static
+    {
+        $params = (array)$params;
+
+        foreach ($params as $param) self::revalidateParam($param, '@{"type": "token"}');
+        
+        return $this;
+    }
+
+    /**
      * Validate parameter's value against a regular expression.
      * 
      * @param string|array $params
