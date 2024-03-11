@@ -255,28 +255,15 @@ class ResourceRoutines implements \ArrayAccess
     /**
      * Limit number of rows in the result set
      * 
-     * @param int $count
+     * @param ?int $offset
+     * @param ?int $row_count
      * @return static
      */
-    public function limit(?int $count = 0) : static
-    {
-        if ( $this->resource ) {
-            static::$resources[$this->resource]['properties']['limit'] = $count;
-        }
-
-        return $this;
-    }
-
-    /**
-     * Limit offset
-     * 
-     * @param int $offset
-     * @return static
-     */
-    public function offset(?int $offset = 0) : static
+    public function limit(?int $offset = 0, ?int $row_count = 0) : static
     {
         if ( $this->resource ) {
             static::$resources[$this->resource]['properties']['offset'] = $offset;
+            static::$resources[$this->resource]['properties']['limit'] = $row_count;
         }
 
         return $this;
