@@ -464,11 +464,11 @@ class Route
             /**
              * Service Route
              */
-            if (self::isServiceRoute()) {
-                $action = 'index';
-                $controller = \Clicalmani\Flesco\Http\Requests\Service::class;
-                $callback = null;
-            }
+            // if (self::isServiceRoute()) {
+            //     $action = 'index';
+            //     $controller = \Clicalmani\Flesco\Http\Requests\Service::class;
+            //     $callback = null;
+            // }
         }
 
         /**
@@ -511,6 +511,7 @@ class Route
         
         // Without options
         foreach ($inters as $param) $tmp = preg_replace("/\\$param\/?/", "", $tmp);
+
         $routes[] = rtrim($tmp, '/');
 
         if (count($matches[0]) > 1) {
@@ -518,12 +519,10 @@ class Route
             $tmp = join('/', $diff);
             foreach ($inters as $param) $routes[] = $tmp . "/$param";
 
-            foreach ($inters as $pos => $param) {
-                $routes[] = rtrim(preg_replace("/\\$param\/?/", "", $route), '/');
-            }
+            foreach ($inters as $pos => $param) $routes[] = rtrim(preg_replace("/\\$param\/?/", "", $route), '/');
         }
         
-        return collection()->exchange($routes)->map(fn(string $route) => str_replace('?', '', $route))->unique()->toArray();
+        return collection($routes)->map(fn(string $route) => str_replace('?', '', $route))->unique()->toArray();
     }
 
     /**

@@ -170,59 +170,6 @@ class ResourceRoutines implements \ArrayAccess
     }
 
     /**
-     * Join resources
-     * 
-     * @param mixed $class_or_object
-     * @param string $foreign_key
-     * @param string $original_key
-     * @param array $includes Restrict to some specific resource methods
-     * @param array $excludes Exclude some specific resource methods
-     * @return static
-     */
-    public function join(mixed $class_or_object, string $foreign_key, ?string $original_key = null, ?array $includes = [], ?array $excludes = []) : static
-    {
-        if ( $this->resource ) {
-            static::$resources[$this->resource]['joints'][] = [
-                'class'    => $class_or_object,
-                'foreign'  => $foreign_key,
-                'original' => $original_key,
-                'includes' => $includes,
-                'excludes' => $excludes
-            ];
-        }
-
-        return $this;
-    }
-
-    /**
-     * Join with inclusion
-     * 
-     * @param mixed $class_or_object
-     * @param string $foreign_key
-     * @param string $original_key
-     * @param array $includes
-     * @return static
-     */
-    public function joinInclude(mixed $class_or_object, string $foreign_key, ?string $original_key, ?array $includes = []) : static
-    {
-        return $this->join($class_or_object, $foreign_key, $original_key, $includes, []);
-    }
-
-    /**
-     * Join with exclusion
-     * 
-     * @param mixed $class_or_object
-     * @param string $foreign_key
-     * @param string $original_key
-     * @param array $includes
-     * @return static
-     */
-    public function joinExclude($class_or_object, $foreign_key, $original_key, $excludes)
-    {
-        return $this->join($class_or_object, $foreign_key, $original_key, [], $excludes);
-    }
-
-    /**
      * From statement when deleting from multiple tables
      * 
      * @param string $table

@@ -168,10 +168,11 @@ trait RouteMethods
      * API resource
      * 
      * @param mixed $resource
-     * @param string $controller [Optional] Controller class
+     * @param ?string $controller Controller class
+     * @param ?array $actions Customize actions
      * @return \Clicalmani\Routes\ResourceRoutines
      */
-    public static function apiResource(mixed $resource, ?string $controller = null) : ResourceRoutines
+    public static function apiResource(mixed $resource, ?string $controller = null, ?array $actions = []) : ResourceRoutines
     {
         $routines = new ResourceRoutines;
 
@@ -182,13 +183,14 @@ trait RouteMethods
             'patch'  => ['update' => ':id'],
             'delete' => ['destroy' => ':id']
         ];
-
+        
         foreach ($routes as $method => $sigs) {
             foreach ($sigs as $action => $sig) {
+                if ( !empty($actions) && !in_array($action, $actions) ) continue;
                 $routines[] = self::register($method, $resource . '/' . $sig, [$controller, $action]);
             }
         }
-
+        
         $routines->addResource($resource, $routines);
 
         return $routines;

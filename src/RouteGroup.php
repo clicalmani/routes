@@ -169,12 +169,12 @@ class RouteGroup
         foreach ($this->group as $route) {
             foreach (Route::getSignatures() as $method => $signature) {
                 foreach ($signature as $key => $action) {
-                    if (strstr($key, $route)) {
+                    if (true === $this->equal($route, $key)) {
                         Route::undefineRouteSignature($method, $key);
                         $middlewares = Route::getRouteMiddlewares($key);
                         foreach ($params as $i => $param) {
                             $key = str_replace('@{"pattern": "' . $patterns[$i] . '"}', '', $key);
-                            $key = preg_replace('/:' . $param . '([^\/])?/', ':' . $param . '@{"pattern": "' . $patterns[$i] . '"}', $key);
+                            $key = preg_replace('/:' . $param . '([^\/]+)?/', ':' . $param . '@{"pattern": "' . $patterns[$i] . '"}', $key);
                         }
                         Route::defineRouteSignature($method, $key, $action);
                         Route::resetRouteMiddlewares($key, $middlewares);
@@ -184,6 +184,20 @@ class RouteGroup
         }
 
         return $this;
+    }
+
+    private function equal(string $entry, string $signature)
+    {
+        if ($entry === $signature) return true;
+
+        $diff = array_diff(
+            collection(preg_split('/[\/]/', $signature, -1, PREG_SPLIT_NO_EMPTY))->map(fn($sig) => explode('@', $sig)[0])->toArray(),
+            preg_split('/[\/]/', $entry, -1, PREG_SPLIT_NO_EMPTY)
+        );
+        
+        if (!$diff) return true;
+        
+        return false;
     }
 
     /**
