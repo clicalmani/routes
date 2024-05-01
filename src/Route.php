@@ -54,28 +54,6 @@ class Route
     private static $is_grouping = false;
 
     /**
-     * Init routing
-     * 
-     * @return void
-     */
-    public static function init() : void
-    {
-        static::$signatures = [
-            'get'     => [], 
-            'post'    => [],
-            'options' => [],
-            'delete'  => [],
-            'put'     => [],
-            'patch'   => []
-        ];
-        
-        /**
-         * Register route services
-         */
-        with( new \App\Providers\RouteServiceProvider )->register();
-    }
-
-    /**
      * Return the current route
      * 
      * @return string
@@ -112,6 +90,16 @@ class Route
     public static function getSignatures() : array
     {
         return static::$signatures;
+    }
+
+    /**
+     * Signatures setter
+     * 
+     * @return void
+     */
+    public static function setSignatures(array $signatures) : void
+    {
+        static::$signatures = $signatures;
     }
 
     /**
@@ -394,11 +382,6 @@ class Route
      */
     public static function isRouteAuthorized(string $route, ?Request $request = null) : int|bool
     {
-        /**
-         * Service route
-         */
-        if (self::isServiceRoute()) return http_response_code();
-
         $names = self::getRouteMiddlewares($route);
 
         /**
@@ -460,15 +443,6 @@ class Route
                 $controller = $callback;
                 $callback = null;
             } elseif (!$callback) $action = 'invoke';
-
-            /**
-             * Service Route
-             */
-            // if (self::isServiceRoute()) {
-            //     $action = 'index';
-            //     $controller = \Clicalmani\Flesco\Http\Requests\Service::class;
-            //     $callback = null;
-            // }
         }
 
         /**
@@ -638,11 +612,6 @@ class Route
             RouteGroup::class, 
             fn(RouteGroup $instance) => $instance->controller = $class
         );
-    }
-
-    private static function isServiceRoute()
-    {
-        return preg_match('/^\/' . self::getApiPrefix() . '\/svc/', current_route());
     }
 
     private static function getResource(string $signature)
