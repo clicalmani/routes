@@ -1,5 +1,7 @@
 <?php 
-namespace Clicalmani\Routes;
+namespace Clicalmani\Routes\Internal;
+
+use Clicalmani\Routes\RouteGroup;
 
 /**
  * Route methods trait
@@ -14,11 +16,11 @@ trait RouteMethods
      * 
      * @param string $route
      * @param mixed $action
-     * @return \Clicalmani\Routes\RouteValidator|\Clicalmani\Routes\RouteGroup
+     * @return \Clicalmani\Routes\Internal\RouteValidator|\Clicalmani\Routes\Internal\RouteGroup
      */
-    public static function get(string $route, mixed $action = null) : RouteValidator|RouteGroup
+    public function get(string $route, mixed $action = null) : RouteValidator|RouteGroup
     { 
-        return self::register('get', $route, $action);
+        return $this->register('get', $route, $action);
     }
 
     /**
@@ -26,11 +28,11 @@ trait RouteMethods
      * 
      * @param string $route
      * @param mixed $action
-     * @return \Clicalmani\Routes\RouteValidator|\Clicalmani\Routes\RouteGroup
+     * @return \Clicalmani\Routes\Internal\RouteValidator|\Clicalmani\Routes\Internal\RouteGroup
      */
-    public static function post(string $route, mixed $action) : RouteValidator|RouteGroup
+    public function post(string $route, mixed $action) : RouteValidator|RouteGroup
     {
-        return self::register('post', $route, $action);
+        return $this->register('post', $route, $action);
     }
 
     /**
@@ -38,11 +40,11 @@ trait RouteMethods
      * 
      * @param string $route
      * @param mixed $action
-     * @return \Clicalmani\Routes\RouteValidator|\Clicalmani\Routes\RouteGroup
+     * @return \Clicalmani\Routes\Internal\RouteValidator|\Clicalmani\Routes\Internal\RouteGroup
      */
-    public static function patch(string $route, mixed $action) : RouteValidator|RouteGroup
+    public function patch(string $route, mixed $action) : RouteValidator|RouteGroup
     {
-        return self::register('patch', $route, $action);
+        return $this->register('patch', $route, $action);
     }
 
     /**
@@ -50,11 +52,11 @@ trait RouteMethods
      * 
      * @param string $route
      * @param mixed $action
-     * @return \Clicalmani\Routes\RouteValidator|\Clicalmani\Routes\RouteGroup
+     * @return \Clicalmani\Routes\Internal\RouteValidator|\Clicalmani\Routes\Internal\RouteGroup
      */
-    public static function put(string $route, mixed $action) : RouteValidator|RouteGroup
+    public function put(string $route, mixed $action) : RouteValidator|RouteGroup
     {
-        return self::register('put', $route, $action);
+        return $this->register('put', $route, $action);
     }
 
     /**
@@ -62,11 +64,11 @@ trait RouteMethods
      * 
      * @param string $route
      * @param mixed $action
-     * @return \Clicalmani\Routes\RouteValidator|\Clicalmani\Routes\RouteGroup
+     * @return \Clicalmani\Routes\Internal\RouteValidator|\Clicalmani\Routes\Internal\RouteGroup
      */
-    public static function options(string $route, mixed $action) : RouteValidator|RouteGroup
+    public function options(string $route, mixed $action) : RouteValidator|RouteGroup
     {
-        return self::register('options', $route, $action);
+        return $this->register('options', $route, $action);
     }
 
     /**
@@ -74,11 +76,11 @@ trait RouteMethods
      * 
      * @param string $route
      * @param mixed $action
-     * @return \Clicalmani\Routes\RouteValidator|\Clicalmani\Routes\RouteGroup
+     * @return \Clicalmani\Routes\Internal\RouteValidator|\Clicalmani\Routes\Internal\RouteGroup
      */
-    public static function delete(string $route, mixed $action) : RouteValidator|RouteGroup
+    public function delete(string $route, mixed $action) : RouteValidator|RouteGroup
     {
-        return self::register('delete', $route, $action);
+        return $this->register('delete', $route, $action);
     }
 
     /**
@@ -88,10 +90,10 @@ trait RouteMethods
      * @param mixed $action
      * @return void
      */
-    public static function any(string $route, mixed $action) : void
+    public function any(string $route, mixed $action) : void
     {
-        foreach (self::getSignatures() as $method => $arr) {
-            self::setRouteSignature($method, $route, $action);
+        foreach ($this->getSignatures() as $method => $arr) {
+            $this->setRouteSignature($method, $route, $action);
         }
     }
 
@@ -101,16 +103,16 @@ trait RouteMethods
      * @param array $matches
      * @param string $route
      * @param mixed $action
-     * @return \Clicalmani\Routes\ResourceRoutines
+     * @return \Clicalmani\Routes\Internal\ResourceRoutines
      */
-    public static function match(array $matches, string $route, mixed $action) : ResourceRoutines
+    public function match(array $matches, string $route, mixed $action) : ResourceRoutines
     {
         $routines = new ResourceRoutines;
 
         foreach ($matches as $method) {
             $method = strtolower($method);
-            if ( array_key_exists($method, self::getSignatures()) ) {
-                $routines[] = self::register($method, $route, $action);
+            if ( array_key_exists($method, $this->getSignatures()) ) {
+                $routines[] = $this->register($method, $route, $action);
             }
         }
 
@@ -122,9 +124,9 @@ trait RouteMethods
      * 
      * @param string $resource
      * @param string $controller
-     * @return \Clicalmani\Routes\ResourceRoutines
+     * @return \Clicalmani\Routes\Internal\ResourceRoutines
      */
-    public static function resource(string $resource, string $controller = null) : ResourceRoutines
+    public function resource(string $resource, string $controller = null) : ResourceRoutines
     {
         $routines = new ResourceRoutines;
 
@@ -138,7 +140,7 @@ trait RouteMethods
 
         foreach ($routes as $method => $sigs) {
             foreach ($sigs as $action => $sig) {
-                $routines[] = self::register($method, $resource . '/' . $sig, [$controller, $action]);
+                $routines[] = $this->register($method, $resource . '/' . $sig, [$controller, $action]);
             }
         }
 
@@ -151,14 +153,14 @@ trait RouteMethods
      * Multiple resources
      * 
      * @param mixed $resource
-     * @return \Clicalmani\Routes\ResourceRoutines
+     * @return \Clicalmani\Routes\Internal\ResourceRoutines
      */
-    public static function resources(mixed $resources) : ResourceRoutines
+    public function resources(mixed $resources) : ResourceRoutines
     {
         $routines = new ResourceRoutines;
 
         foreach ($resources as $resource => $controller) {
-            $routines->merge(self::resource($resource, $controller));
+            $routines->merge($this->resource($resource, $controller));
         }
 
         return $routines;
@@ -170,9 +172,9 @@ trait RouteMethods
      * @param mixed $resource
      * @param ?string $controller Controller class
      * @param ?array $actions Customize actions
-     * @return \Clicalmani\Routes\ResourceRoutines
+     * @return \Clicalmani\Routes\Internal\ResourceRoutines
      */
-    public static function apiResource(mixed $resource, ?string $controller = null, ?array $actions = []) : ResourceRoutines
+    public function apiResource(mixed $resource, ?string $controller = null, ?array $actions = []) : ResourceRoutines
     {
         $routines = new ResourceRoutines;
 
@@ -187,7 +189,7 @@ trait RouteMethods
         foreach ($routes as $method => $sigs) {
             foreach ($sigs as $action => $sig) {
                 if ( !empty($actions) && !in_array($action, $actions) ) continue;
-                $routines[] = self::register($method, $resource . '/' . $sig, [$controller, $action]);
+                $routines[] = $this->register($method, $resource . '/' . $sig, [$controller, $action]);
             }
         }
         
@@ -200,14 +202,14 @@ trait RouteMethods
      * Multiple resources
      * 
      * @param mixed $resources
-     * @return \Clicalmani\Routes\ResourceRoutines
+     * @return \Clicalmani\Routes\Internal\ResourceRoutines
      */
-    public static function apiResources(mixed $resources) : ResourceRoutines
+    public function apiResources(mixed $resources) : ResourceRoutines
     {
         $routines = new ResourceRoutines;
 
         foreach ($resources as $resource => $controller) {
-            $routines->merge(self::apiResource($resource, $controller));
+            $routines->merge($this->apiResource($resource, $controller));
         }
 
         return $routines;

@@ -1,6 +1,8 @@
 <?php
 namespace Clicalmani\Routes;
 
+use Clicalmani\Routes\Route;
+
 /**
  * RouteGroup class
  * 
@@ -107,7 +109,7 @@ class RouteGroup
                         $key = "/$key";
                     }
                     
-                    if ($this->controller) $action = [$this->controller, @ $action[0] ? $action[0]: 'invoke'];
+                    if ($this->controller) $action = [$this->controller, @ $action[0] ? $action[0]: '__invoke'];
 
                     if (preg_match('/\?:.*([^\/])?/', $key)) {
                         echo $key . '<br>';

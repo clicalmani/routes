@@ -1,5 +1,8 @@
 <?php
-namespace Clicalmani\Routes;
+namespace Clicalmani\Routes\Internal;
+
+use Clicalmani\Routes\Route;
+use Clicalmani\Routes\Routing;
 
 /**
  * RouteValidator class
@@ -123,7 +126,7 @@ class RouteValidator
      * @param string $validator
      * @return void
      */
-    private function revalidateParam(string $param,string $validator) : void
+    private function revalidateParam(string $param, string $validator) : void
     {
         $this->unbind();
         
@@ -142,7 +145,7 @@ class RouteValidator
     {
         $params = (array)$params;
 
-        foreach ($params as $param) self::revalidateParam($param, '@{"type": "numeric"}');
+        foreach ($params as $param) $this->revalidateParam($param, '@{"type": "numeric"}');
         
         return $this;
     }
@@ -157,7 +160,7 @@ class RouteValidator
     {
         $params = (array)$params;
 
-        foreach ($params as $param) self::revalidateParam($param, '@{"type": "int"}');
+        foreach ($params as $param) $this->revalidateParam($param, '@{"type": "int"}');
         
         return $this;
     }
@@ -172,7 +175,7 @@ class RouteValidator
     {
         $params = (array)$params;
 
-        foreach ($params as $param) self::revalidateParam($param, '@{"type": "float"}');
+        foreach ($params as $param) $this->revalidateParam($param, '@{"type": "float"}');
         
         return $this;
     }
@@ -188,7 +191,7 @@ class RouteValidator
     {
         $params = (array)$params;
 
-        foreach ($params as $param) self::revalidateParam($param, '@{"enum": "' . join(',', $list) . '"}');
+        foreach ($params as $param) $this->revalidateParam($param, '@{"enum": "' . join(',', $list) . '"}');
         
         return $this;
     }
@@ -203,7 +206,7 @@ class RouteValidator
     {
         $params = (array)$params;
 
-        foreach ($params as $param) self::revalidateParam($param, '@{"type": "token"}');
+        foreach ($params as $param) $this->revalidateParam($param, '@{"type": "token"}');
         
         return $this;
     }
@@ -219,7 +222,7 @@ class RouteValidator
     {
         $params = (array)$params;
 
-        foreach ($params as $param) self::revalidateParam($param, '@{"pattern": "' . $pattern . '"}');
+        foreach ($params as $param) $this->revalidateParam($param, '@{"pattern": "' . $pattern . '"}');
         
         return $this;
     }
@@ -238,7 +241,7 @@ class RouteValidator
         $uid = uniqid('gard-');
         
         Routing::registerGuard($uid, $param, $callback);
-        self::revalidateParam($param, '@{"uid": "' . $uid . '"}');
+        $this->revalidateParam($param, '@{"uid": "' . $uid . '"}');
 
         return $this;
     } 

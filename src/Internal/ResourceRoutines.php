@@ -1,5 +1,5 @@
 <?php
-namespace Clicalmani\Routes;
+namespace Clicalmani\Routes\Internal;
 
 use Clicalmani\Collection\Collection;
 
