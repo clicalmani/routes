@@ -71,7 +71,7 @@ class Routing
      * Computes routes with the same number of sequences as the current route
      * 
      * @param string $method Only signatures of the defined method will be searched for
-     * @return array 
+     * @return array
      */
     private function getAlpha(string $method) : array
     {
